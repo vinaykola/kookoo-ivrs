@@ -42,15 +42,12 @@ else if($_REQUEST['event'] == "GotDTMF" && $_SESSION['state'] == "calcLocation")
 {
 
 	$code = $_REQUEST['data'];
-	
-	$filename = "places.txt";					// places.txt contains a mapping between the places and their 3-digit codes. More places can be added as a new line in places.txt
-	$fp = fopen($filename, "r") or die("Couldn't open $filename"); 	
-	while(!feof($fp)) 
-	{ $line = fgets($fp); 
-	$arr = explode("|",$line);
-	$hashmap[$arr[0]] = @$arr[1];					// Now we have an array of places, each of whose key is the 3-digit code containing the first 3 letters
-	} 
-	fclose($fp); 
+
+
+	include 'places.php';
+
+	/* 'places.php' contains a mapping between the places and their 3-digit codes. More places can be added as a new line in 'places.php'.
+	 Now we have an array of places, each of whose key is the 3-digit code containing the first 3 letters. */
 
 	$place = $hashmap[$code];					// Using the hashmap, we identify the place
 	
@@ -63,7 +60,26 @@ else if($_REQUEST['event'] == "GotDTMF" && $_SESSION['state'] == "calcLocation")
 		$cd->setTermChar("#");
 		$cd->setTimeOut(4000);
 		$cd->addPlayText($place);
-		$cd->addPlayText("Press 1 for hotels, 2 for hospitals, 3 for restaurants, followed by hash.");
+
+		
+		include 'establishments.php';
+
+		/* 'establishments.php' contains a mapping between the types and their choices. More establishments can be added as a new line. */
+
+		$prompt = "Press ";
+		$i = "1";
+
+
+
+		while($typearray[$i] != "")
+		{
+			$prompt = $prompt . $i . " for " . $typearray[$i] . "s, ";
+			$i =  $i + 1;
+		}
+		
+		$prompt.= "followed by hash.";		
+		
+		$cd->addPlayText($prompt);
 	
 		$_SESSION['place'] = $place;
 		$_SESSION['state'] = "findEstablishment";
@@ -90,10 +106,9 @@ else if($_REQUEST['event'] == "GotDTMF" && $_SESSION['state'] == "findEstablishm
 {
 	$typecode= $_REQUEST['data'];
 
-	if($typecode == "1") $type = "hotel";
-	else if($typecode == "2") $type = "hospital";
-	else if($typecode == "3") $type = "restaurant";
-	
+	include 'establishments.php';
+
+	$type = $typearray[$typecode];
 	
 	if($type != "")
 	{
@@ -126,7 +141,20 @@ else if($_REQUEST['event'] == "GotDTMF" && $_SESSION['state'] == "findEstablishm
 		$cd->setTermChar("#");
 		$cd->setTimeOut(4000);
 		$cd->addPlayText($place);
-		$cd->addPlayText("Please re-enter your choice. Enter 1 for hotels, 2 for hospitals, 3 for restaurants, followed by hash.");
+		$prompt = "Press ";
+		$i = "1";
+
+
+
+		while($typearray[$i] != "")
+		{
+			$prompt = $prompt . $i . " for " . $typearray[$i] . "s, ";
+			$i =  $i + 1;
+		}
+		
+		$prompt.= "followed by hash.";		
+		
+		$cd->addPlayText($prompt);
 		$_SESSION['state'] = "findEstablishment";
 		$r->addCollectDtmf($cd);
 	
